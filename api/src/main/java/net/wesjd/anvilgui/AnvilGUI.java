@@ -16,6 +16,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -91,7 +92,7 @@ public class AnvilGUI {
 	 */
 	@Deprecated
 	public AnvilGUI(Plugin plugin, Player holder, String insert, BiFunction<Player, String, String> biFunction) {
-		this(plugin, holder, insert, false, null, (player, text) -> {
+		this(plugin, holder, insert, null, false, null, (player, text) -> {
 			String response = biFunction.apply(player, text);
 			if(response != null) {
 				return Response.text(response);
@@ -107,6 +108,7 @@ public class AnvilGUI {
 	 * @param plugin A {@link org.bukkit.plugin.java.JavaPlugin} instance
 	 * @param player The {@link Player} to open the inventory for
 	 * @param text What to have the text already set to
+	 * @param insert The {@link ItemStack} to put in the Anvil GUI
 	 * @param preventClose Whether to prevent the inventory from closing
 	 * @param closeListener A {@link Consumer} when the inventory closes
 	 * @param completeFunction A {@link BiFunction} that is called when the player clicks the {@link Slot#OUTPUT} slot
@@ -115,6 +117,7 @@ public class AnvilGUI {
 			Plugin plugin,
 			Player player,
 			String text,
+			ItemStack insert,
 			boolean preventClose,
 			Consumer<Player> closeListener,
 			BiFunction<Player, String, Response> completeFunction
@@ -122,6 +125,7 @@ public class AnvilGUI {
 		this.plugin = plugin;
 		this.player = player;
 		this.text = text;
+		this.insert = insert;
 		this.preventClose = preventClose;
 		this.closeListener = closeListener;
 		this.completeFunction = completeFunction;
@@ -132,11 +136,7 @@ public class AnvilGUI {
 	 * Opens the anvil GUI
 	 */
 	private void openInventory() {
-		final ItemStack paper = new ItemStack(Material.PAPER);
-		final ItemMeta paperMeta = paper.getItemMeta();
-		paperMeta.setDisplayName(text);
-		paper.setItemMeta(paperMeta);
-		this.insert = paper;
+		this.insert = Objects.isNull(insert) ? makeDefaultItemStack(text) : insert;
 
 		WRAPPER.handleInventoryCloseEvent(player);
 		WRAPPER.setActiveContainerDefault(player);
@@ -154,6 +154,21 @@ public class AnvilGUI {
 		WRAPPER.setActiveContainerId(container, containerId);
 		WRAPPER.addActiveContainerSlotListener(container, player);
 		open = true;
+	}
+
+	/**
+	 * Makes the default {@link ItemStack} when it has not been
+	 * provided by the {@link AnvilGUI.Builder}.
+	 *
+	 * @param text The default {@link String} that you want to inset.
+	 * @return A default {@link ItemStack} to insert to the GUI.
+	 */
+	private ItemStack makeDefaultItemStack(String text) {
+		final ItemStack paper = new ItemStack(Material.PAPER);
+		final ItemMeta paperMeta = paper.getItemMeta();
+		paperMeta.setDisplayName(text);
+		paper.setItemMeta(paperMeta);
+		return paper;
 	}
 
 	/**
@@ -248,6 +263,10 @@ public class AnvilGUI {
 		 * The text that will be displayed to the user
 		 */
 		private String text = "";
+		/**
+		 * The {@link ItemStack} that would get inserted into the GUI.
+		 */
+		private ItemStack itemStack;
 
 		/**
 		 * Prevents the closing of the anvil GUI by the user
@@ -307,6 +326,20 @@ public class AnvilGUI {
 		}
 
 		/**
+		 * Sets the ItemStack that will be inserted into the
+		 * Anvil GUI.
+		 *
+		 * @param itemStack The {@link ItemStack} that will be displayed
+		 * @return The {@link Builder} instance
+		 * @throws IllegalArgumentException if the {@link ItemStack} is null
+		 */
+		public Builder itemStack(ItemStack itemStack) {
+			Validate.notNull(itemStack, "The ItemStack cannot be null");
+			this.itemStack = itemStack;
+			return this;
+		}
+
+		/**
 		 * Creates the anvil GUI and opens it for the player
 		 * @param player The {@link Player} the anvil GUI should open for
 		 * @return The {@link AnvilGUI} instance from this builder
@@ -316,7 +349,7 @@ public class AnvilGUI {
 			Validate.notNull(plugin, "Plugin cannot be null");
 			Validate.notNull(completeFunction, "Complete function cannot be null");
 			Validate.notNull(player, "Player cannot be null");
-			return new AnvilGUI(plugin, player, text, preventClose, closeListener, completeFunction);
+			return new AnvilGUI(plugin, player, text, itemStack, preventClose, closeListener, completeFunction);
 		}
 
 	}
