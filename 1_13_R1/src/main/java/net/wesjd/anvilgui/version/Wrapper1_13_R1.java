@@ -18,7 +18,7 @@ public class Wrapper1_13_R1 implements VersionWrapper {
      * {@inheritDoc}
      */
     @Override
-    public int getNextContainerId(Player player) {
+    public int getNextContainerId(Player player, Object container) {
         return toNMS(player).nextContainerCounter();
     }
 
@@ -119,6 +119,9 @@ public class Wrapper1_13_R1 implements VersionWrapper {
             super.d();
             this.levelCost = 0;
         }
+
+        @Override
+        protected void a(EntityHuman entityhuman, World world, IInventory iinventory) {}
 
     }
 
